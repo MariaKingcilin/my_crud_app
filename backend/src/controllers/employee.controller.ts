@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 
 type SuccessResponse = {
   success: boolean;
+  status: number;
   message: string;
   data?: any;
 };
@@ -16,6 +17,7 @@ export const getAllEmployees = async (
 
     res.json({
       success: true,
+      status: 200,
       data: employees,
       message: "Employees data get successfully",
     });
@@ -23,6 +25,7 @@ export const getAllEmployees = async (
     console.error("Fetch Error:", error);
     res.status(500).json({
       success: false,
+      status: 500,
       message: "Failed to get employees.",
     });
   }
@@ -44,12 +47,14 @@ export const createEmployee = async (
       if (updatedCount > 0) {
         return res.json({
           success: true,
+          status: 200,
           data: updatedEmployees ? updatedEmployees[0] : null,
           message: "Employee updated successfully",
         });
       } else {
         return res.status(404).json({
           success: false,
+          status: 404,
           message: "Employee not found",
         });
       }
@@ -58,6 +63,7 @@ export const createEmployee = async (
 
       return res.json({
         success: true,
+        status: 200,
         data: employee,
         message: "Employee created successfully",
       });
@@ -66,6 +72,7 @@ export const createEmployee = async (
     console.error("Fetch Error:", error);
     res.status(500).json({
       success: false,
+      status: 500,
       message: "Failed to process employee request.",
     });
   }
