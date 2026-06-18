@@ -1,5 +1,9 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { CreateEmployeeAPI, GetAllEmployeeAPI } from "../api/employees-api";
+import {
+  CreateEmployeeAPI,
+  DeleteEmployeeAPI,
+  GetAllEmployeeAPI,
+} from "../api/employees-api";
 
 export const useGetAllEmployeeAPI = () => {
   return useQuery({
@@ -12,5 +16,12 @@ export const useCreateEmployeeAPI = () => {
   return useMutation({
     mutationFn: CreateEmployeeAPI,
     mutationKey: ["create-employee"],
+  });
+};
+
+export const useDeleteEmployeeAPI = () => {
+  return useMutation({
+    mutationFn: DeleteEmployeeAPI,
+    mutationKey: ["delete-employee"],
   });
 };

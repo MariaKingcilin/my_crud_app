@@ -77,3 +77,36 @@ export const createEmployee = async (
     });
   }
 };
+export const deleteEmployee = async (
+  req: Request,
+  res: Response<SuccessResponse>
+) => {
+  try {
+    const { UserId } = req.params;
+
+    const deletedCount = await Employee.destroy({
+      where: { UserId },
+    });
+
+    if (deletedCount > 0) {
+      return res.json({
+        success: true,
+        status: 200,
+        message: "Employee deleted successfully",
+      });
+    } else {
+      return res.status(404).json({
+        success: false,
+        status: 404,
+        message: "Employee not found",
+      });
+    }
+  } catch (error) {
+    console.error("Fetch Error:", error);
+    res.status(500).json({
+      success: false,
+      status: 500,
+      message: "Failed to delete employee.",
+    });
+  }
+};

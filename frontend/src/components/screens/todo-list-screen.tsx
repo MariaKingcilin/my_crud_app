@@ -1,7 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import React from "react";
-import { useCreateEmployeeAPI } from "../../queries/employees-query";
+import {
+  useCreateEmployeeAPI,
+  useDeleteEmployeeAPI,
+} from "../../queries/employees-query";
 import EmployeeListScreen from "./employee-list-screen";
 import TodoHeader from "./todo-header";
 
@@ -36,6 +39,9 @@ const TodoListScreen = () => {
 
   const { mutate: createEmployeeMutate, isPending: isCreateEmployeeLoading } =
     useCreateEmployeeAPI();
+
+  const { mutate: deleteEmployeeMutate, isPending: isDeleteEmployeeLoading } =
+    useDeleteEmployeeAPI();
 
   const handleOnChangeInput = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -93,14 +99,11 @@ const TodoListScreen = () => {
         Department: formData.department,
       };
 
-      console.log("Submitting employee data:", employeeData);
-
       if (isEditing) {
         createEmployeeMutate(
           { ...employeeData, UserId: editEmployeeId },
           {
-            onSuccess: async (data: any) => {
-              console.log("Employee updated successfully:", data);
+            onSuccess: async () => {
               handleClickCancelBtn();
               await queryClient.invalidateQueries({
                 queryKey: ["get-employees"],
@@ -109,12 +112,11 @@ const TodoListScreen = () => {
             onError: (error: any) => {
               console.error("Error updating employee:", error);
             },
-          }
+          },
         );
       } else {
         createEmployeeMutate(employeeData, {
-          onSuccess: async (data: any) => {
-            console.log("Employee created successfully:", data);
+          onSuccess: async () => {
             handleClickCancelBtn();
             await queryClient.invalidateQueries({ queryKey: ["get-employees"] });
           },
@@ -162,10 +164,18 @@ const TodoListScreen = () => {
   };
 
   const confirmDelete = async () => {
-    console.log("Deleting employee:", employeeToDelete?.UserId);
-    // Handle Delete Logic here
-    setShowDeleteModal(false);
-    setEmployeeToDelete(null);
+    if (employeeToDelete) {
+      deleteEmployeeMutate(employeeToDelete.UserId, {
+        onSuccess: async () => {
+          setShowDeleteModal(false);
+          setEmployeeToDelete(null);
+          await queryClient.invalidateQueries({ queryKey: ["get-employees"] });
+        },
+        onError: (error: any) => {
+          console.error("Error deleting employee:", error);
+        },
+      });
+    }
   };
 
   return (

@@ -14,3 +14,7 @@ export const CreateEmployeeAPI = async (employeeData: any) => {
   );
   return response.data;
 };
+export const DeleteEmployeeAPI = async (UserId: string) => {
+  const response = await axios.delete(`${baseUrl}/employees/${UserId}`);
+  return response.data;
+};
