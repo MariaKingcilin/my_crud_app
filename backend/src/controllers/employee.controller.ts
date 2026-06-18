@@ -23,7 +23,7 @@ export const getAllEmployees = async (
     console.error("Fetch Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to get tasks.",
+      message: "Failed to get employees.",
     });
   }
 };
@@ -33,18 +33,40 @@ export const createEmployee = async (
   res: Response<SuccessResponse>
 ) => {
   try {
-    const employee = await Employee.create(req.body);
+    const { UserId } = req.body;
 
-    res.json({
-      success: true,
-      data: employee,
-      message: "Employee created successfully",
-    });
+    if (UserId) {
+      const [updatedCount, updatedEmployees] = await Employee.update(req.body, {
+        where: { UserId },
+        returning: true,
+      });
+
+      if (updatedCount > 0) {
+        return res.json({
+          success: true,
+          data: updatedEmployees ? updatedEmployees[0] : null,
+          message: "Employee updated successfully",
+        });
+      } else {
+        return res.status(404).json({
+          success: false,
+          message: "Employee not found",
+        });
+      }
+    } else {
+      const employee = await Employee.create(req.body);
+
+      return res.json({
+        success: true,
+        data: employee,
+        message: "Employee created successfully",
+      });
+    }
   } catch (error) {
     console.error("Fetch Error:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to get tasks.",
+      message: "Failed to process employee request.",
     });
   }
 };

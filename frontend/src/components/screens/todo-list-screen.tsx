@@ -1,8 +1,9 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { X } from "lucide-react";
 import React from "react";
 import { useCreateEmployeeAPI } from "../../queries/employees-query";
-import TodoHeader from "./todo-header";
 import EmployeeListScreen from "./employee-list-screen";
-import { useQueryClient } from "@tanstack/react-query";
+import TodoHeader from "./todo-header";
 
 const inputFields = [
   { name: "firstName", label: "First Name", type: "text" },
@@ -26,13 +27,19 @@ const TodoListScreen = () => {
     department: "",
   });
   const [errors, setErrors] = React.useState<{ [key: string]: string }>({});
+  const [isEditing, setIsEditing] = React.useState(false);
+  const [editEmployeeId, setEditEmployeeId] = React.useState<string | null>(
+    null,
+  );
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = React.useState<any>(null);
 
   const { mutate: createEmployeeMutate, isPending: isCreateEmployeeLoading } =
     useCreateEmployeeAPI();
 
   const handleOnChangeInput = (
     e: React.ChangeEvent<HTMLInputElement>,
-    field: string
+    field: string,
   ) => {
     setFormData({ ...formData, [field]: e.target.value });
 
@@ -88,20 +95,38 @@ const TodoListScreen = () => {
 
       console.log("Submitting employee data:", employeeData);
 
-      createEmployeeMutate(employeeData, {
-        onSuccess: async (data) => {
-          console.log("Employee created successfully:", data);
-          handleClickCancelBtn();
-          await queryClient.invalidateQueries({ queryKey: ["get-employees"] });
-        },
-        onError: (error) => {
-          console.error("Error creating employee:", error);
-        },
-      });
+      if (isEditing) {
+        createEmployeeMutate(
+          { ...employeeData, UserId: editEmployeeId },
+          {
+            onSuccess: async (data: any) => {
+              console.log("Employee updated successfully:", data);
+              handleClickCancelBtn();
+              await queryClient.invalidateQueries({
+                queryKey: ["get-employees"],
+              });
+            },
+            onError: (error: any) => {
+              console.error("Error updating employee:", error);
+            },
+          }
+        );
+      } else {
+        createEmployeeMutate(employeeData, {
+          onSuccess: async (data: any) => {
+            console.log("Employee created successfully:", data);
+            handleClickCancelBtn();
+            await queryClient.invalidateQueries({ queryKey: ["get-employees"] });
+          },
+          onError: (error: any) => {
+            console.error("Error creating employee:", error);
+          },
+        });
+      }
     }
   };
 
-  const handleClickCancelBtn = () =>
+  const handleClickCancelBtn = () => {
     setFormData({
       firstName: "",
       lastName: "",
@@ -111,6 +136,37 @@ const TodoListScreen = () => {
       designation: "",
       department: "",
     });
+    setErrors({});
+    setIsEditing(false);
+    setEditEmployeeId(null);
+  };
+
+  const handleEditEmployee = (employee: any) => {
+    setFormData({
+      firstName: employee.FirstName,
+      lastName: employee.LastName,
+      email: employee.Email,
+      mobileNumber: employee.Phone,
+      dateOfBirth: employee.DateOfBirth,
+      designation: employee.Designation,
+      department: employee.Department,
+    });
+    setIsEditing(true);
+    setEditEmployeeId(employee.UserId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleDeleteEmployee = (employee: any) => {
+    setEmployeeToDelete(employee);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    console.log("Deleting employee:", employeeToDelete?.UserId);
+    // Handle Delete Logic here
+    setShowDeleteModal(false);
+    setEmployeeToDelete(null);
+  };
 
   return (
     <React.Fragment>
@@ -118,13 +174,14 @@ const TodoListScreen = () => {
       <section className="w-full pt-4 md:pt-6 lg:pt-6">
         <div className="w-[95%] h-full mx-auto">
           <h3 className="text-[22px] text-content-black font-semibold mb-4">
-            Create Employee
+            {isEditing ? "Edit Employee" : "Create Employee"}
           </h3>
           <div className="w-full flex flex-wrap">
             {inputFields.map((field: any) => (
               <div
                 key={field.name}
-                className="w-full md:w-1/2 lg:w-1/4 p-1 mb-1 md:p-2 md:mb-2 lg:p-2 lg:mb-2">
+                className="w-full md:w-1/2 lg:w-1/4 p-1 mb-1 md:p-2 md:mb-2 lg:p-2 lg:mb-2"
+              >
                 <label className="text-content-gray text-[14px]">
                   {field.label} <span className="text-content-red">*</span>
                 </label>
@@ -135,10 +192,9 @@ const TodoListScreen = () => {
                   onChange={(e) => handleOnChangeInput(e, field.name)}
                   className={`w-full border-2 rounded-md mt-1 py-2 px-3 
                     focus:outline-none 
-                    ${
-                      errors[field.name]
-                        ? "border-red-500"
-                        : "border-stroke-border hover:border-primary-blue focus:border-primary-blue"
+                    ${errors[field.name]
+                      ? "border-red-500"
+                      : "border-stroke-border hover:border-primary-blue focus:border-primary-blue"
                     }`}
                 />
                 {errors[field.name] && (
@@ -153,18 +209,62 @@ const TodoListScreen = () => {
             <button
               onClick={handleClickSubmitBtn}
               disabled={isCreateEmployeeLoading}
-              className="w-1/2 md:w-auto lg:w-auto bg-primary-blue text-white text-[14px] font-medium hover:bg-icon-background rounded-md px-6 py-2">
-              Submit{isCreateEmployeeLoading && "..."}
+              className="w-1/2 md:w-auto lg:w-auto bg-primary-blue text-white text-[14px] font-medium hover:bg-icon-background rounded-md px-6 py-2"
+            >
+              {isEditing ? "Update" : "Submit"}
+              {isCreateEmployeeLoading && "..."}
             </button>
             <button
               onClick={handleClickCancelBtn}
-              className="w-1/2 md:w-auto lg:w-auto bg-primary-background text-stroke-border hover:text-icon-focus hover:border-icon-focus border-2 border-stroke-border text-[14px] font-medium rounded-md px-6 py-2">
-              Clear
+              className="w-1/2 md:w-auto lg:w-auto bg-primary-background text-stroke-border hover:text-icon-focus hover:border-icon-focus border-2 border-stroke-border text-[14px] font-medium rounded-md px-6 py-2"
+            >
+              {isEditing ? "Cancel" : "Clear"}
             </button>
           </div>
         </div>
       </section>
-      <EmployeeListScreen />
+      <EmployeeListScreen
+        onEdit={handleEditEmployee}
+        onDelete={handleDeleteEmployee}
+      />
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-md shadow-lg max-w-sm w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-[18px] font-semibold text-content-black">
+                Confirm Delete
+              </h3>
+              <X
+                className="cursor-pointer text-content-gray"
+                onClick={() => setShowDeleteModal(false)}
+              />
+            </div>
+            <p className="text-[14px] text-content-gray mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-content-black">
+                {employeeToDelete?.FirstName} {employeeToDelete?.LastName}
+              </span>
+              ? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 text-[14px] text-content-gray border rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-[14px] text-white bg-content-red rounded-md hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </React.Fragment>
   );
 };
